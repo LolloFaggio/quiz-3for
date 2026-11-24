@@ -1,0 +1,36 @@
+{
+  "name": "Simulatore Esame Antincendio 3-FOR",
+  "short_name": "Quiz 3-FOR",
+  "description": "Simulatore offline con 150 domande ufficiali per l'esame di idoneità tecnica Antincendio Livello 3 (3-FOR) CNVVF.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#b91c1c",
+  "lang": "it",
+  "categories": [
+    "education",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

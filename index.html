@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Quiz Antincendio 3-FOR — Simulatore Esame VVF</title>
+  <meta name="description" content="Simulatore PWA offline per l'esame di idoneità tecnica Antincendio Livello 3 (3-FOR) del Corpo Nazionale dei Vigili del Fuoco. 150 domande ufficiali su 10 schede." />
+  <meta name="theme-color" content="#b91c1c" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Quiz 3-FOR" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-soft: #1e293b;
+      --card: #1e293b;
+      --card-2: #273449;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #dc2626;
+      --primary-dark: #b91c1c;
+      --primary-soft: rgba(220, 38, 38, 0.16);
+      --accent: #f59e0b;
+      --accent-soft: rgba(245, 158, 11, 0.16);
+      --ok: #16a34a;
+      --ok-soft: rgba(22, 163, 74, 0.18);
+      --err: #ef4444;
+      --err-soft: rgba(239, 68, 68, 0.18);
+      --radius: 16px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding-bottom: calc(82px + var(--safe-bottom));
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: linear-gradient(135deg, #991b1b, #b91c1c 60%, #7f1d1d);
+      padding: calc(12px + var(--safe-top)) 16px 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 2px solid #fbbf24;
+      flex-shrink: 0;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #fff;
+      overflow: hidden;
+    }
+    .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .brand h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .brand small {
+      display: block;
+      font-size: 11px;
+      color: rgba(255,255,255,0.85);
+    }
+    .top-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(15, 23, 42, 0.45);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .pill.online-ok { background: rgba(22, 163, 74, 0.35); border-color: rgba(74, 222, 128, 0.5); }
+    .pill.offline-mode { background: rgba(245, 158, 11, 0.35); border-color: rgba(251, 191, 36, 0.6); }
+    .btn-install-top {
+      display: none;
+      background: #fbbf24;
+      color: #111827;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    /* Main container */
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .kpi .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi .val { font-size: 22px; font-weight: 800; margin-top: 2px; }
+    .kpi .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Mode selector bar */
+    .mode-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .segmented {
+      display: inline-flex;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .segmented button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .segmented button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .toggle-row input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    /* Cards & Grids */
+    .section-title {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin: 18px 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sheets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 680px) {
+      .sheets-grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: transform 0.12s, border-color 0.15s;
+    }
+    .card.clickable { cursor: pointer; }
+    .card.clickable:hover { border-color: #64748b; transform: translateY(-1px); }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--primary-soft);
+      color: #fca5a5;
+    }
+    .badge.ok { background: var(--ok-soft); color: #86efac; }
+    .badge.warn { background: var(--accent-soft); color: #fcd34d; }
+    .badge.info { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; }
+    .card h3 { margin: 4px 0 6px; font-size: 15px; line-height: 1.3; }
+    .card p { margin: 0; font-size: 13px; color: var(--muted); }
+    .card-foot {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--card-2); color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { border-color: #64748b; }
+    .btn-accent { background: var(--accent); color: #111827; }
+    .btn-ok { background: var(--ok); color: #fff; }
+    .btn-danger-ghost { background: transparent; color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+    .btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 10px; }
+    .btn-block { width: 100%; }
+
+    /* Quiz View */
+    .quiz-header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .timer-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: 15px;
+      background: var(--bg);
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .timer-box.urgent { border-color: var(--err); color: #fca5a5; }
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 0.25s;
+    }
+
+    /* Question Navigator Dots */
+    .q-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+    }
+    .q-dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .q-dot.current { border-color: #fff; color: #fff; box-shadow: 0 0 0 2px var(--primary); }
+    .q-dot.answered { background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #e0f2fe; }
+    .q-dot.correct { background: var(--ok-soft); border-color: var(--ok); color: #86efac; }
+    .q-dot.wrong { background: var(--err-soft); border-color: var(--err); color: #fca5a5; }
+    .q-dot.flagged::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* Question Card */
+    .q-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .q-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .q-text {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 0 0 16px;
+      line-height: 1.4;
+    }
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .opt-btn {
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 13px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.38;
+      cursor: pointer;
+      transition: 0.14s;
+    }
+    .opt-btn:hover:not(:disabled) { border-color: #64748b; }
+    .opt-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--card-2);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .opt-btn.selected {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.14);
+    }
+    .opt-btn.selected .opt-letter { background: #0284c7; color: #fff; }
+    .opt-btn.is-correct {
+      border-color: var(--ok);
+      background: var(--ok-soft);
+    }
+    .opt-btn.is-correct .opt-letter { background: var(--ok); color: #fff; }
+    .opt-btn.is-wrong {
+      border-color: var(--err);
+      background: var(--err-soft);
+    }
+    .opt-btn.is-wrong .opt-letter { background: var(--err); color: #fff; }
+
+    .explain-box {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.7);
+      border-left: 4px solid var(--accent);
+      font-size: 13.5px;
+      color: #e2e8f0;
+    }
+    .explain-box strong { color: #fcd34d; }
+
+    .quiz-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Report View */
+    .report-hero {
+      text-align: center;
+      padding: 22px 16px;
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      background: var(--card);
+      margin-bottom: 16px;
+    }
+    .report-hero.pass { border-color: var(--ok); background: linear-gradient(180deg, rgba(22,163,74,0.18), var(--card)); }
+    .report-hero.reserve { border-color: var(--accent); background: linear-gradient(180deg, rgba(245,158,11,0.18), var(--card)); }
+    .report-hero.fail { border-color: var(--err); background: linear-gradient(180deg, rgba(239,68,68,0.18), var(--card)); }
+    .report-hero .big-score { font-size: 40px; font-weight: 900; margin: 4px 0; }
+    .mod-bars { display: grid; gap: 10px; margin-bottom: 16px; }
+    .mod-bar-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; }
+    .mod-bar-head { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+
+    /* Search & Bank */
+    .filter-bar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 640px) {
+      .filter-bar { grid-template-columns: 1fr; }
+    }
+    .input, .select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      width: 100%;
+    }
+    .bank-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .bank-opts { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+    .bank-opts li.ans-reveal { color: #86efac; font-weight: 700; }
+
+    /* Bottom Mobile Navigation */
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 6px 6px calc(6px + var(--safe-bottom));
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px 4px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .nav-btn span.ico { font-size: 18px; line-height: 1; }
+    .nav-btn.active { color: #fff; background: var(--primary-soft); }
+
+    .hidden { display: none !important; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .note-box {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 13.5px;
+      color: #fde68a;
+    }
+    .install-card {
+      background: linear-gradient(135deg, rgba(185,28,28,0.28), rgba(15,23,42,0.9));
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .step-list { margin: 8px 0 0; padding-left: 20px; font-size: 13.5px; color: #e2e8f0; }
+    .step-list li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo"><img src="./icons/icon-192.png" alt="3-FOR" onerror="this.style.display='none'; this.parentElement.textContent='3F';" /></div>
+    <div>
+      <h1>Simulatore 3-FOR</h1>
+      <small>Idoneità Tecnica Antincendio VVF · 150 Quesiti</small>
+    </div>
+  </div>
+  <div class="top-badges">
+    <button id="btnInstallTop" class="btn-install-top" onclick="triggerInstall()">⬇ Installa</button>
+    <span id="offlinePill" class="pill">⏳ Cache…</span>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ==================== TAB 1: SCHEDE UFFICIALI ==================== -->
+  <section id="view-schede">
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="label">Domande svolte</div>
+        <div class="val" id="kpiDone">0 / 150</div>
+        <div class="sub">Uniche completate</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Precisione</div>
+        <div class="val" id="kpiAcc">—</div>
+        <div class="sub">Media risposte</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Schede idonee</div>
+        <div class="val" id="kpiPassed">0 / 10</div>
+        <div class="sub">Soglia ≤ 3 errori</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Errori salvati</div>
+        <div class="val" id="kpiErrors" style="color:#fca5a5;">0</div>
+        <div class="sub">Pronti al ripasso</div>
+      </div>
+    </div>
+
+    <div class="mode-bar">
+      <div class="segmented" role="group" aria-label="Modalità di esecuzione">
+        <button id="modeExamBtn" class="active" onclick="setGlobalMode('exam')">⏱ Esame Reale (30 min)</button>
+        <button id="modeTrainBtn" onclick="setGlobalMode('train')">💡 Allenamento Guidato</button>
+      </div>
+      <label class="toggle-row">
+        <input type="checkbox" id="shuffleOptsCheck" checked />
+        Mescola opzioni A/B/C
+      </label>
+    </div>
+
+    <div class="section-title">
+      <span>10 Schede Ufficiali (15 domande cad.)</span>
+      <span style="font-size:11px;font-weight:600;">Tocca una scheda per iniziare</span>
+    </div>
+    <div id="sheetsGrid" class="sheets-grid"></div>
+  </section>
+
+  <!-- ==================== TAB 2: PRATICA & RIPASSO ==================== -->
+  <section id="view-pratica" class="hidden">
+    <div class="section-title"><span>Simulazioni Rapide & Ripasso Intelligente</span></div>
+    <div class="sheets-grid">
+      <div class="card clickable" onclick="startRandomExam()">
+        <div class="card-head"><span class="badge info">15 Domande Casuali</span></div>
+        <h3>🎲 Simulazione Esame Casuale</h3>
+        <p>Estrae 15 domande casuali da tutta la banca dati (Moduli 1–4) con opzioni A/B/C mescolate, simulando l'esame reale VVF.</p>
+        <div class="card-foot"><span>Timer 30 min (in modalità Esame)</span><strong>Avvia →</strong></div>
+      </div>
+
+      <div class="card clickable" onclick="startErrorsReview()">
+        <div class="card-head"><span class="badge" id="errCountBadge">0 errori</span></div>
+        <h3>🎯 Ripasso Errori Salvati</h3>
+        <p>Ti interroga solo sulle domande sbagliate in precedenza. Quando rispondi correttamente, l'errore viene rimosso automaticamente.</p>
+        <div class="card-foot"><span>Modalità Allenamento Guidato</span><strong>Ripassa →</strong></div>
+      </div>
+
+      <div class="card clickable" onclick="startMarathon(true)">
+        <div class="card-head"><span class="badge warn">150 Domande</span></div>
+        <h3>🔥 Maratona Completa (Casuale)</h3>
+        <p>Affronta tutte le 150 domande ufficiali in ordine casuale senza ripetizioni, con correzione immediata o finale.</p>
+        <div class="card-foot"><span>Copertura 100% dispensa</span><strong>Avvia →</strong></div>
+      </div>
+
+      <div class="card clickable" onclick="startSheet(10)">
+        <div class="card-head"><span class="badge">Alta Difficoltà</span></div>
+        <h3>⚠️ Solo Trabocchetti d'Esame</h3>
+        <p>Avvia subito la Scheda 10 dedicata ai 15 tranelli più frequenti (Ti vs Ta, spazio scoperto, sprinkler, CO₂, APVR).</p>
+        <div class="card-foot"><span>15 quesiti mirati</span><strong>Avvia →</strong></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>Allenamento Mirato per Modulo</span></div>
+    <div class="sheets-grid">
+      <div class="card clickable" onclick="startModuleQuiz(1)">
+        <div class="card-head"><span class="badge info">Modulo 1</span><span id="modCount1" class="badge ok"></span></div>
+        <h3>Incendio e Prevenzione</h3>
+        <p>Combustione, triangolo del fuoco, classi, fisica, dinamica, gas tossici, estinguenti, R=F×M, segnaletica, D.M. 1/9/2021.</p>
+      </div>
+      <div class="card clickable" onclick="startModuleQuiz(2)">
+        <div class="card-head"><span class="badge info">Modulo 2</span><span id="modCount2" class="badge ok"></span></div>
+        <h3>Strategia Antincendio (Parte 1)</h3>
+        <p>Aree rischio specifico, ATEX, reazione/resistenza al fuoco, compartimentazione, sistema d'esodo, IRAI, fumo e calore.</p>
+      </div>
+      <div class="card clickable" onclick="startModuleQuiz(3)">
+        <div class="card-head"><span class="badge info">Modulo 3</span><span id="modCount3" class="badge ok"></span></div>
+        <h3>Strategia Antincendio (Parte 2)</h3>
+        <p>Estintori, reti idranti, sprinkler, diluvio, Water Mist, ORS, operatività VVF, GSA e Piano di Emergenza.</p>
+      </div>
+      <div class="card clickable" onclick="startModuleQuiz(4)">
+        <div class="card-head"><span class="badge info">Modulo 4</span><span id="modCount4" class="badge ok"></span></div>
+        <h3>Esercitazioni Pratiche & APVR</h3>
+        <p>Uso estintori, naspi, idranti UNI 45, soprasuolo/sottosuolo DN 70, attacco motopompa e DPI vie respiratorie.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 3: BANCA DATI 150 ==================== -->
+  <section id="view-banca" class="hidden">
+    <div class="section-title">
+      <span>Banca Dati Completa (150 Quesiti)</span>
+      <button class="btn btn-secondary btn-sm" id="btnToggleSolutions" onclick="toggleBankSolutions()">👁 Mostra Soluzioni</button>
+    </div>
+    <div class="filter-bar">
+      <input id="bankSearch" class="input" type="search" placeholder="Cerca parola chiave (es. flash-over, 68 °C, APVR, LEL…)" oninput="renderBank()" />
+      <select id="bankModFilter" class="select" onchange="renderBank()">
+        <option value="all">Tutti i Moduli</option>
+        <option value="1">Modulo 1</option>
+        <option value="2">Modulo 2</option>
+        <option value="3">Modulo 3</option>
+        <option value="4">Modulo 4</option>
+      </select>
+      <select id="bankSheetFilter" class="select" onchange="renderBank()">
+        <option value="all">Tutte le Schede</option>
+      </select>
+    </div>
+    <div id="bankCounter" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
+    <div id="bankList"></div>
+  </section>
+
+  <!-- ==================== TAB 4: INSTALLA APP & INFO ==================== -->
+  <section id="view-info" class="hidden">
+    <div class="install-card">
+      <h2 style="margin:0 0 6px;font-size:18px;">📱 Installa sul Telefono (App Offline)</h2>
+      <p style="margin:0 0 12px;font-size:13.5px;color:#e2e8f0;">
+        Questa app è una <strong>Progressive Web App (PWA)</strong>. Una volta aperta tramite un link HTTPS e installata sulla schermata Home, funziona a schermo intero e <strong>100% senza internet</strong>.
+      </p>
+      <div class="row">
+        <button id="btnInstallMain" class="btn btn-accent hidden" onclick="triggerInstall()">⬇ Installa App ora</button>
+        <span id="installStatusText" class="badge ok">Stato PWA: attiva</span>
+      </div>
+    </div>
+
+    <div class="sheets-grid">
+      <div class="card">
+        <h3>🤖 Su Android (Chrome)</h3>
+        <ol class="step-list">
+          <li>Apri il link HTTPS dell'app su <strong>Google Chrome</strong>.</li>
+          <li>Tocca il pulsante <strong>"⬇ Installa"</strong> in alto (oppure il menu <strong>⋮</strong> in alto a destra).</li>
+          <li>Seleziona <strong>"Installa app"</strong> o <strong>"Aggiungi a schermata Home"</strong>.</li>
+          <li>Troverai l'icona <strong>Quiz 3-FOR</strong> tra le tue app, funzionante anche in modalità aereo.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>🍎 Su iPhone / iPad (Safari)</h3>
+        <ol class="step-list">
+          <li>Apri il link HTTPS dell'app con <strong>Safari</strong>.</li>
+          <li>Tocca l'icona <strong>Condividi</strong> (quadrato con freccia verso l'alto) in basso.</li>
+          <li>Scorri e scegli <strong>"Aggiungi alla schermata Home"</strong>.</li>
+          <li>Conferma con <strong>Aggiungi</strong>: l'app si aprirà a schermo intero senza barra del browser.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3>📋 Regole Ufficiali Esame Scritto 3-FOR (CNVVF)</h3>
+      <ul class="step-list">
+        <li><strong>Struttura prova scritta:</strong> 15 domande a risposta multipla (3 opzioni, 1 sola esatta).</li>
+        <li><strong>Tempo a disposizione:</strong> 30 minuti.</li>
+        <li><strong>Idoneità diretta:</strong> almeno <strong>12 risposte esatte su 15</strong> (massimo 3 errori).</li>
+        <li><strong>Fascia di riserva (10–11/15):</strong> in molte commissioni provinciali consente l'ammissione con approfondimento orale sulle materie sbagliate.</li>
+        <li><strong>Scorciatoie da tastiera (su PC/Mac):</strong> tasti <strong>1 / 2 / 3</strong> per scegliere, <strong>← / →</strong> per cambiare domanda, <strong>F</strong> per segnare da rivedere.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <h3>🗑️ Gestione Dati Locali</h3>
+      <p style="margin-bottom:12px;">Tutti i tuoi progressi, i punteggi migliori delle 10 schede e gli errori salvati restano salvati in locale sul tuo dispositivo.</p>
+      <button class="btn btn-danger-ghost btn-sm" onclick="resetAllProgress()">Azzera tutti i progressi salvati</button>
+    </div>
+  </section>
+
+  <!-- ==================== QUIZ RUNNER VIEW ==================== -->
+  <section id="view-quiz" class="hidden">
+    <div class="quiz-header">
+      <div>
+        <div id="quizTitle" style="font-weight:800;font-size:15px;"></div>
+        <div id="quizSub" style="font-size:12px;color:var(--muted);"></div>
+      </div>
+      <div class="row">
+        <div id="timerBox" class="timer-box hidden">
+          <span>⏱</span><span id="timerDisplay">30:00</span>
+          <button class="btn btn-secondary btn-sm" style="padding:3px 8px;" id="btnPause" onclick="togglePause()">⏸</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="confirmExitQuiz()">✕ Esci</button>
+      </div>
+      <div class="progress-track"><div id="quizProgressFill" class="progress-fill"></div></div>
+    </div>
+
+    <div id="qNav" class="q-nav" aria-label="Navigazione domande"></div>
+
+    <div class="q-card">
+      <div class="q-meta">
+        <div class="row">
+          <span id="qNumberBadge" class="badge info">Domanda 1 / 15</span>
+          <span id="qModBadge" class="badge">Modulo 1</span>
+        </div>
+        <button id="btnFlag" class="btn btn-secondary btn-sm" onclick="toggleFlag()">🚩 Segna</button>
+      </div>
+      <h2 id="qText" class="q-text"></h2>
+      <div id="optionsList" class="options-list"></div>
+      <div id="explainBox" class="explain-box hidden"></div>
+    </div>
+
+    <div class="quiz-actions">
+      <button class="btn btn-secondary" id="btnPrev" onclick="prevQuestion()">← Precedente</button>
+      <div class="row">
+        <button class="btn btn-accent" id="btnFinish" onclick="finishQuiz()">✔ Consegna e Correggi</button>
+        <button class="btn btn-primary" id="btnNext" onclick="nextQuestion()">Successiva →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== REPORT VIEW ==================== -->
+  <section id="view-report" class="hidden">
+    <div id="reportHero" class="report-hero"></div>
+    <div class="row" style="justify-content:center;margin-bottom:16px;">
+      <button class="btn btn-primary" id="btnRetryErrors" onclick="retrySessionErrors()">🎯 Ripeti solo gli errori</button>
+      <button class="btn btn-secondary" id="btnFilterErr" onclick="toggleReportErrorsOnly()">Mostra solo gli errori</button>
+      <button class="btn btn-secondary" onclick="exitToHome()">🏠 Torna alle Schede</button>
+    </div>
+    <div class="section-title"><span>Rendimento per Modulo</span></div>
+    <div id="reportModBars" class="mod-bars"></div>
+    <div class="section-title"><span>Revisione Dettagliata Risposte</span></div>
+    <div id="reportReviewList"></div>
+  </section>
+
+</main>
+
+<nav id="bottomNav" class="bottom-nav" aria-label="Menu principale">
+  <button class="nav-btn active" data-tab="schede" onclick="switchTab('schede')">
+    <span class="ico">📋</span><span>Schede</span>
+  </button>
+  <button class="nav-btn" data-tab="pratica" onclick="switchTab('pratica')">
+    <span class="ico">🎯</span><span>Pratica</span>
+  </button>
+  <button class="nav-btn" data-tab="banca" onclick="switchTab('banca')">
+    <span class="ico">📚</span><span>Banca 150</span>
+  </button>
+  <button class="nav-btn" data-tab="info" onclick="switchTab('info')">
+    <span class="ico">📱</span><span>App / Info</span>
+  </button>
+</nav>
+
+<script src="./questions.js"></script>
+<script>
+(function() {
+  const STORAGE_KEY = 'quiz_3for_pwa_state_v1';
+  let deferredPrompt = null;
+
+  // Persistent State
+  let appState = loadState();
+  function defaultState() {
+    return {
+      mode: 'exam', // 'exam' | 'train'
+      answeredIds: {}, // id -> boolean (last result)
+      totalCorrect: 0,
+      totalAttempts: 0,
+      sheetBest: {}, // sheetId -> { correct, total, errors }
+      savedErrors: [] // array of question IDs
+    };
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      return Object.assign(defaultState(), JSON.parse(raw));
+    } catch (e) { return defaultState(); }
+  }
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); } catch (e) {}
+  }
+
+  // Current Quiz Session
+  let session = null;
+  let timerInterval = null;
+  let bankShowSolutions = false;
+  let reportErrorsOnly = false;
+
+  // Service Worker & Offline Status
+  function updateOnlineBadge() {
+    const pill = document.getElementById('offlinePill');
+    if (!navigator.onLine) {
+      pill.textContent = '✈ Offline attivo';
+      pill.className = 'pill offline-mode';
+    } else if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      pill.textContent = '✓ Offline pronto';
+      pill.className = 'pill online-ok';
+    } else {
+      pill.textContent = '● Online';
+      pill.className = 'pill';
+    }
+  }
+  window.addEventListener('online', updateOnlineBadge);
+  window.addEventListener('offline', updateOnlineBadge);
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(() => {
+        setTimeout(updateOnlineBadge, 600);
+      }).catch(() => updateOnlineBadge());
+    });
+  } else {
+    updateOnlineBadge();
+  }
+
+  // PWA Install Prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('btnInstallTop').style.display = 'inline-flex';
+    document.getElementById('btnInstallMain').classList.remove('hidden');
+    document.getElementById('installStatusText').textContent = 'Pronta per installazione su questo dispositivo';
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    document.getElementById('btnInstallTop').style.display = 'none';
+    document.getElementById('btnInstallMain').classList.add('hidden');
+    document.getElementById('installStatusText').textContent = '✓ App già installata!';
+  });
+  window.triggerInstall = async function() {
+    if (!deferredPrompt) {
+      switchTab('info');
+      return;
+    }
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('btnInstallTop').style.display = 'none';
+  };
+
+  // Detect standalone mode
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    document.getElementById('installStatusText').textContent = '✓ In esecuzione come App installata';
+  }
+
+  // Navigation
+  window.switchTab = function(tab) {
+    ['schede', 'pratica', 'banca', 'info', 'quiz', 'report'].forEach(v => {
+      document.getElementById('view-' + v).classList.add('hidden');
+    });
+    document.getElementById('view-' + tab).classList.remove('hidden');
+    document.getElementById('bottomNav').classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    if (tab === 'schede') renderHome();
+    if (tab === 'pratica') renderPracticeMeta();
+    if (tab === 'banca') renderBank();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  window.setGlobalMode = function(m) {
+    appState.mode = m;
+    saveState();
+    document.getElementById('modeExamBtn').classList.toggle('active', m === 'exam');
+    document.getElementById('modeTrainBtn').classList.toggle('active', m === 'train');
+  };
+
+  function renderHome() {
+    const doneCount = Object.keys(appState.answeredIds).length;
+    document.getElementById('kpiDone').textContent = `${doneCount} / ${window.QUESTION_BANK.length}`;
+    const acc = appState.totalAttempts > 0 ? Math.round((appState.totalCorrect / appState.totalAttempts) * 100) + '%' : '—';
+    document.getElementById('kpiAcc').textContent = acc;
+    let passed = 0;
+    for (let s = 1; s <= 10; s++) {
+      const b = appState.sheetBest[s];
+      if (b && b.errors <= 3) passed++;
+    }
+    document.getElementById('kpiPassed').textContent = `${passed} / 10`;
+    document.getElementById('kpiErrors').textContent = appState.savedErrors.length;
+
+    document.getElementById('modeExamBtn').classList.toggle('active', appState.mode === 'exam');
+    document.getElementById('modeTrainBtn').classList.toggle('active', appState.mode === 'train');
+
+    const grid = document.getElementById('sheetsGrid');
+    grid.innerHTML = '';
+    window.SHEETS_META.forEach(s => {
+      const best = appState.sheetBest[s.id];
+      let statusBadge = '<span class="badge info">Da svolgere</span>';
+      if (best) {
+        if (best.errors <= 3) statusBadge = `<span class="badge ok">✓ Idoneo (${best.correct}/15)</span>`;
+        else if (best.errors <= 5) statusBadge = `<span class="badge warn">Riserva (${best.correct}/15)</span>`;
+        else statusBadge = `<span class="badge">Ripeti (${best.correct}/15)</span>`;
+      }
+      const div = document.createElement('div');
+      div.className = 'card clickable';
+      div.onclick = () => startSheet(s.id);
+      div.innerHTML = `
+        <div class="card-head">
+          <span class="badge">${s.tag}</span>
+          ${statusBadge}
+        </div>
+        <h3>${s.title}</h3>
+        <p>${s.subtitle}</p>
+        <div class="card-foot">
+          <span>15 domande</span>
+          <strong>Inizia →</strong>
+        </div>
+      `;
+      grid.appendChild(div);
+    });
+  }
+
+  function renderPracticeMeta() {
+    const errN = appState.savedErrors.length;
+    document.getElementById('errCountBadge').textContent = errN === 1 ? '1 errore salvato' : `${errN} errori salvati`;
+    for (let m = 1; m <= 4; m++) {
+      const c = window.QUESTION_BANK.filter(q => q.module === m).length;
+      document.getElementById('modCount' + m).textContent = `${c} quesiti`;
+    }
+  }
+
+  // Quiz Builders
+  function shuffleArr(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function prepareQuestions(list, shuffleOptions) {
+    return list.map(q => {
+      const indexed = q.options.map((text, idx) => ({ text, isCorrect: idx === q.answer }));
+      const finalOpts = shuffleOptions ? shuffleArr(indexed) : indexed;
+      return {
+        id: q.id,
+        sheet: q.sheet,
+        module: q.module,
+        question: q.question,
+        explanation: q.explanation,
+        options: finalOpts.map(o => o.text),
+        answer: finalOpts.findIndex(o => o.isCorrect)
+      };
+    });
+  }
+
+  function launchSession({ title, subtitle, questions, mode, timedSeconds, sheetId, isErrorReview }) {
+    const shuffleOpts = document.getElementById('shuffleOptsCheck').checked;
+    const prepared = prepareQuestions(questions, shuffleOpts);
+    session = {
+      title,
+      subtitle,
+      mode,
+      sheetId: sheetId || null,
+      isErrorReview: !!isErrorReview,
+      questions: prepared,
+      answers: new Array(prepared.length).fill(null),
+      flags: new Array(prepared.length).fill(false),
+      current: 0,
+      secondsLeft: timedSeconds || 0,
+      paused: false
+    };
+
+    clearInterval(timerInterval);
+    const timerBox = document.getElementById('timerBox');
+    if (mode === 'exam' && timedSeconds > 0) {
+      timerBox.classList.remove('hidden');
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        if (!session || session.paused) return;
+        session.secondsLeft--;
+        updateTimerUI();
+        if (session.secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          alert('Tempo scaduto! La prova verrà corretta automaticamente.');
+          finishQuiz(true);
+        }
+      }, 1000);
+    } else {
+      timerBox.classList.add('hidden');
+    }
+
+    ['schede', 'pratica', 'banca', 'info', 'report'].forEach(v => document.getElementById('view-' + v).classList.add('hidden'));
+    document.getElementById('view-quiz').classList.remove('hidden');
+    document.getElementById('bottomNav').classList.add('hidden');
+    document.getElementById('quizTitle').textContent = title;
+    document.getElementById('quizSub').textContent = subtitle + (mode === 'exam' ? ' · Esame Reale' : ' · Allenamento Guidato');
+    renderQuizQuestion();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+
+  window.startSheet = function(sheetId) {
+    const meta = window.SHEETS_META.find(s => s.id === sheetId);
+    const qs = window.QUESTION_BANK.filter(q => q.sheet === sheetId);
+    launchSession({
+      title: meta.title,
+      subtitle: meta.tag,
+      questions: qs,
+      mode: appState.mode,
+      timedSeconds: appState.mode === 'exam' ? 30 * 60 : 0,
+      sheetId
+    });
+  };
+
+  window.startRandomExam = function() {
+    const qs = shuffleArr(window.QUESTION_BANK).slice(0, 15);
+    launchSession({
+      title: 'Simulazione Esame Casuale',
+      subtitle: '15 domande estratte dai Moduli 1–4',
+      questions: qs,
+      mode: appState.mode,
+      timedSeconds: appState.mode === 'exam' ? 30 * 60 : 0
+    });
+  };
+
+  window.startModuleQuiz = function(mod) {
+    const qs = shuffleArr(window.QUESTION_BANK.filter(q => q.module === mod));
+    launchSession({
+      title: `Allenamento Modulo ${mod}`,
+      subtitle: `${qs.length} domande mirate`,
+      questions: qs,
+      mode: 'train',
+      timedSeconds: 0
+    });
+  };
+
+  window.startMarathon = function(shuffled) {
+    const qs = shuffled ? shuffleArr(window.QUESTION_BANK) : window.QUESTION_BANK.slice();
+    launchSession({
+      title: 'Maratona Completa 150 Domande',
+      subtitle: 'Tutta la banca dati CNVVF 3-FOR',
+      questions: qs,
+      mode: appState.mode,
+      timedSeconds: 0
+    });
+  };
+
+  window.startErrorsReview = function() {
+    if (!appState.savedErrors.length) {
+      alert('Ottimo lavoro! Non hai errori salvati da ripassare.');
+      return;
+    }
+    const qs = shuffleArr(window.QUESTION_BANK.filter(q => appState.savedErrors.includes(q.id)));
+    launchSession({
+      title: 'Ripasso Errori Salvati',
+      subtitle: `${qs.length} quesiti da correggere`,
+      questions: qs,
+      mode: 'train',
+      timedSeconds: 0,
+      isErrorReview: true
+    });
+  };
+
+  function updateTimerUI() {
+    if (!session) return;
+    const m = Math.floor(session.secondsLeft / 60);
+    const s = session.secondsLeft % 60;
+    document.getElementById('timerDisplay').textContent =
+      String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    document.getElementById('timerBox').classList.toggle('urgent', session.secondsLeft <= 300);
+    document.getElementById('btnPause').textContent = session.paused ? '▶' : '⏸';
+  }
+
+  window.togglePause = function() {
+    if (!session) return;
+    session.paused = !session.paused;
+    updateTimerUI();
+  };
+
+  function renderQuizQuestion() {
+    const q = session.questions[session.current];
+    const chosen = session.answers[session.current];
+    const total = session.questions.length;
+    const answeredCount = session.answers.filter(a => a !== null).length;
+
+    document.getElementById('quizProgressFill').style.width = `${Math.round((answeredCount / total) * 100)}%`;
+    document.getElementById('qNumberBadge').textContent = `Domanda ${session.current + 1} / ${total}`;
+    document.getElementById('qModBadge').textContent = `Modulo ${q.module} · Scheda ${q.sheet}`;
+    document.getElementById('qText').textContent = q.question;
+
+    const btnFlag = document.getElementById('btnFlag');
+    btnFlag.textContent = session.flags[session.current] ? '🚩 Segnata' : '🚩 Segna';
+    btnFlag.className = session.flags[session.current] ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm';
+
+    // Navigator dots (show all if <= 30, otherwise compact window around current)
+    const nav = document.getElementById('qNav');
+    nav.innerHTML = '';
+    const maxDots = 30;
+    let startIdx = 0, endIdx = total;
+    if (total > maxDots) {
+      startIdx = Math.max(0, session.current - 12);
+      endIdx = Math.min(total, startIdx + maxDots);
+      if (endIdx - startIdx < maxDots) startIdx = Math.max(0, endIdx - maxDots);
+    }
+    for (let i = startIdx; i < endIdx; i++) {
+      const dot = document.createElement('button');
+      dot.className = 'q-dot';
+      dot.textContent = i + 1;
+      if (i === session.current) dot.classList.add('current');
+      if (session.flags[i]) dot.classList.add('flagged');
+      if (session.answers[i] !== null) {
+        if (session.mode === 'train') {
+          dot.classList.add(session.answers[i] === session.questions[i].answer ? 'correct' : 'wrong');
+        } else {
+          dot.classList.add('answered');
+        }
+      }
+      dot.onclick = () => { session.current = i; renderQuizQuestion(); };
+      nav.appendChild(dot);
+    }
+
+    // Options
+    const letters = ['A', 'B', 'C'];
+    const list = document.getElementById('optionsList');
+    list.innerHTML = '';
+    const lockedTrain = session.mode === 'train' && chosen !== null;
+
+    q.options.forEach((optText, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      if (lockedTrain) {
+        btn.disabled = true;
+        if (idx === q.answer) btn.classList.add('is-correct');
+        else if (idx === chosen) btn.classList.add('is-wrong');
+      } else if (chosen === idx) {
+        btn.classList.add('selected');
+      }
+      btn.innerHTML = `<span class="opt-letter">${letters[idx]}</span><span>${optText}</span>`;
+      btn.onclick = () => selectOption(idx);
+      list.appendChild(btn);
+    });
+
+    // Explanation in Training mode
+    const exp = document.getElementById('explainBox');
+    if (lockedTrain) {
+      const ok = chosen === q.answer;
+      exp.classList.remove('hidden');
+      exp.innerHTML = `<strong>${ok ? '✓ Risposta esatta!' : '✗ Risposta errata.'}</strong> ${q.explanation}`;
+    } else {
+      exp.classList.add('hidden');
+    }
+
+    document.getElementById('btnPrev').disabled = session.current === 0;
+    const isLast = session.current === total - 1;
+    document.getElementById('btnNext').classList.toggle('hidden', isLast);
+  }
+
+  function selectOption(idx) {
+    if (!session) return;
+    if (session.mode === 'train' && session.answers[session.current] !== null) return;
+    session.answers[session.current] = idx;
+    if (session.mode === 'train') {
+      const q = session.questions[session.current];
+      const ok = idx === q.answer;
+      if (session.isErrorReview && ok) {
+        appState.savedErrors = appState.savedErrors.filter(id => id !== q.id);
+        saveState();
+      }
+    }
+    renderQuizQuestion();
+  }
+
+  window.prevQuestion = function() {
+    if (session && session.current > 0) { session.current--; renderQuizQuestion(); }
+  };
+  window.nextQuestion = function() {
+    if (session && session.current < session.questions.length - 1) { session.current++; renderQuizQuestion(); }
+  };
+  window.toggleFlag = function() {
+    if (!session) return;
+    session.flags[session.current] = !session.flags[session.current];
+    renderQuizQuestion();
+  };
+  window.confirmExitQuiz = function() {
+    if (confirm('Vuoi uscire dalla simulazione in corso? Le risposte non consegnate andranno perse.')) {
+      clearInterval(timerInterval);
+      session = null;
+      switchTab('schede');
+    }
+  };
+
+  window.finishQuiz = function(force) {
+    if (!session) return;
+    const unanswered = session.answers.filter(a => a === null).length;
+    if (!force && unanswered > 0) {
+      if (!confirm(`Hai ancora ${unanswered} domand${unanswered === 1 ? 'a' : 'e'} senza risposta (verranno contate come errori). Vuoi consegnare comunque?`)) {
+        return;
+      }
+    }
+    clearInterval(timerInterval);
+
+    let correct = 0;
+    const modStats = { 1: { ok: 0, tot: 0 }, 2: { ok: 0, tot: 0 }, 3: { ok: 0, tot: 0 }, 4: { ok: 0, tot: 0 } };
+    const wrongQuestions = [];
+
+    session.questions.forEach((q, idx) => {
+      const chosen = session.answers[idx];
+      const isOk = chosen === q.answer;
+      modStats[q.module].tot++;
+      if (isOk) {
+        correct++;
+        modStats[q.module].ok++;
+        appState.savedErrors = appState.savedErrors.filter(id => id !== q.id);
+      } else {
+        wrongQuestions.push(q);
+        if (!appState.savedErrors.includes(q.id)) appState.savedErrors.push(q.id);
+      }
+      appState.answeredIds[q.id] = isOk;
+      appState.totalAttempts++;
+      if (isOk) appState.totalCorrect++;
+    });
+
+    const total = session.questions.length;
+    const errors = total - correct;
+
+    if (session.sheetId) {
+      const prev = appState.sheetBest[session.sheetId];
+      if (!prev || correct > prev.correct) {
+        appState.sheetBest[session.sheetId] = { correct, total, errors };
+      }
+    }
+    saveState();
+
+    // Render Report
+    session.wrongQuestions = wrongQuestions;
+    reportErrorsOnly = false;
+    document.getElementById('btnFilterErr').textContent = 'Mostra solo gli errori';
+    document.getElementById('btnRetryErrors').classList.toggle('hidden', wrongQuestions.length === 0);
+
+    const hero = document.getElementById('reportHero');
+    let cls = 'fail', verdict = 'NON IDONEO', desc = '';
+    if (total === 15) {
+      if (errors <= 3) {
+        cls = 'pass'; verdict = '✅ IDONEO ALLA PROVA SCRITTA';
+        desc = `Hai commesso solo ${errors} error${errors === 1 ? 'e' : 'i'} (soglia ufficiale CNVVF: massimo 3 errori).`;
+      } else if (errors <= 5) {
+        cls = 'reserve'; verdict = '⚠️ AMMESSO CON RISERVA / ORALE';
+        desc = `Con ${correct}/15 (${errors} errori) molte commissioni VVF richiedono un approfondimento orale. Ripassa gli errori!`;
+      } else {
+        cls = 'fail'; verdict = '❌ NON IDONEO';
+        desc = `Hai commesso ${errors} errori (oltre il limite di 3). Usa il tasto "Ripeti solo gli errori" qui sotto.`;
+      }
+    } else {
+      const pct = Math.round((correct / total) * 100);
+      cls = pct >= 80 ? 'pass' : (pct >= 65 ? 'reserve' : 'fail');
+      verdict = pct >= 80 ? '✅ OTTIMA PREPARAZIONE' : (pct >= 65 ? '⚠️ QUASI PRONTO' : '❌ DA CONSOLIDARE');
+      desc = `Precisione complessiva: ${pct}% (${errors} error${errors === 1 ? 'e' : 'i'} su ${total} domande).`;
+    }
+    hero.className = 'report-hero ' + cls;
+    hero.innerHTML = `
+      <div style="font-size:13px;font-weight:800;letter-spacing:0.5px;">${verdict}</div>
+      <div class="big-score">${correct} / ${total}</div>
+      <div style="font-size:15px;font-weight:700;color:${errors === 0 ? '#86efac' : '#fca5a5'};">Errori commessi: ${errors}</div>
+      <p style="margin:8px 0 0;font-size:13.5px;color:#e2e8f0;">${desc}</p>
+    `;
+
+    // Module bars
+    const barsEl = document.getElementById('reportModBars');
+    barsEl.innerHTML = '';
+    [1, 2, 3, 4].forEach(m => {
+      if (modStats[m].tot === 0) return;
+      const pct = Math.round((modStats[m].ok / modStats[m].tot) * 100);
+      barsEl.innerHTML += `
+        <div class="mod-bar-item">
+          <div class="mod-bar-head"><span>Modulo ${m}</span><span>${modStats[m].ok}/${modStats[m].tot} (${pct}%)</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${pct >= 80 ? '#16a34a' : (pct >= 60 ? '#f59e0b' : '#ef4444')};"></div></div>
+        </div>
+      `;
+    });
+
+    renderReportReview();
+    document.getElementById('view-quiz').classList.add('hidden');
+    document.getElementById('view-report').classList.remove('hidden');
+    document.getElementById('bottomNav').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  function renderReportReview() {
+    const list = document.getElementById('reportReviewList');
+    list.innerHTML = '';
+    const letters = ['A', 'B', 'C'];
+    let shown = 0;
+
+    session.questions.forEach((q, idx) => {
+      const chosen = session.answers[idx];
+      const isOk = chosen === q.answer;
+      if (reportErrorsOnly && isOk) return;
+      shown++;
+      const div = document.createElement('div');
+      div.className = 'bank-item';
+      div.style.borderColor = isOk ? 'rgba(22,163,74,0.45)' : 'rgba(239,68,68,0.55)';
+      const userAnsText = chosen === null ? 'Nessuna risposta' : `${letters[chosen]}) ${q.options[chosen]}`;
+      const rightAnsText = `${letters[q.answer]}) ${q.options[q.answer]}`;
+      div.innerHTML = `
+        <div class="card-head">
+          <span class="badge ${isOk ? 'ok' : ''}">${isOk ? '✓ Esatta' : '✗ Errore'} · Domanda ${idx + 1}</span>
+          <span class="badge info">Modulo ${q.module}</span>
+        </div>
+        <div style="font-weight:700;font-size:14.5px;margin-bottom:8px;">${q.question}</div>
+        <div style="font-size:13px;color:${isOk ? '#86efac' : '#fca5a5'};margin-bottom:4px;"><strong>Tua risposta:</strong> ${userAnsText}</div>
+        ${!isOk ? `<div style="font-size:13px;color:#86efac;margin-bottom:6px;"><strong>Risposta corretta:</strong> ${rightAnsText}</div>` : ''}
+        <div style="font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:6px;margin-top:6px;">💡 ${q.explanation}</div>
+      `;
+      list.appendChild(div);
+    });
+    if (shown === 0) {
+      list.innerHTML = '<div class="card" style="text-align:center;">🎉 Zero errori in questa simulazione!</div>';
+    }
+  }
+
+  window.toggleReportErrorsOnly = function() {
+    reportErrorsOnly = !reportErrorsOnly;
+    document.getElementById('btnFilterErr').textContent = reportErrorsOnly ? 'Mostra tutte le domande' : 'Mostra solo gli errori';
+    renderReportReview();
+  };
+
+  window.retrySessionErrors = function() {
+    if (!session || !session.wrongQuestions || !session.wrongQuestions.length) return;
+    const origIds = session.wrongQuestions.map(q => q.id);
+    const qs = window.QUESTION_BANK.filter(q => origIds.includes(q.id));
+    launchSession({
+      title: 'Ripetizione Errori della Prova',
+      subtitle: `${qs.length} quesiti sbagliati`,
+      questions: qs,
+      mode: 'train',
+      timedSeconds: 0,
+      isErrorReview: true
+    });
+  };
+
+  window.exitToHome = function() {
+    session = null;
+    switchTab('schede');
+  };
+
+  // Searchable Bank
+  function initBankDropdown() {
+    const sel = document.getElementById('bankSheetFilter');
+    window.SHEETS_META.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = String(s.id);
+      opt.textContent = `Scheda ${s.id} (${s.tag})`;
+      sel.appendChild(opt);
+    });
+  }
+
+  window.toggleBankSolutions = function() {
+    bankShowSolutions = !bankShowSolutions;
+    document.getElementById('btnToggleSolutions').textContent = bankShowSolutions ? '🙈 Nascondi Soluzioni' : '👁 Mostra Soluzioni';
+    renderBank();
+  };
+
+  window.renderBank = function() {
+    const query = (document.getElementById('bankSearch').value || '').trim().toLowerCase();
+    const modF = document.getElementById('bankModFilter').value;
+    const sheetF = document.getElementById('bankSheetFilter').value;
+    const filtered = window.QUESTION_BANK.filter(q => {
+      if (modF !== 'all' && String(q.module) !== modF) return false;
+      if (sheetF !== 'all' && String(q.sheet) !== sheetF) return false;
+      if (query) {
+        const hay = (q.question + ' ' + q.options.join(' ') + ' ' + q.explanation).toLowerCase();
+        if (!hay.includes(query)) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('bankCounter').textContent = `Visualizzate ${filtered.length} di ${window.QUESTION_BANK.length} domande`;
+    const list = document.getElementById('bankList');
+    list.innerHTML = '';
+    const letters = ['A', 'B', 'C'];
+    filtered.forEach(q => {
+      const div = document.createElement('div');
+      div.className = 'bank-item';
+      div.innerHTML = `
+        <div class="card-head">
+          <span class="badge info">#${q.id} · Scheda ${q.sheet}</span>
+          <span class="badge">Modulo ${q.module}</span>
+        </div>
+        <div style="font-weight:700;font-size:14.5px;">${q.question}</div>
+        <ol class="bank-opts" type="A">
+          ${q.options.map((o, i) => `<li class="${bankShowSolutions && i === q.answer ? 'ans-reveal' : ''}">${o}${bankShowSolutions && i === q.answer ? ' ✓' : ''}</li>`).join('')}
+        </ol>
+        ${bankShowSolutions ? `<div style="margin-top:8px;font-size:12.5px;color:#fcd34d;">💡 ${q.explanation}</div>` : ''}
+      `;
+      list.appendChild(div);
+    });
+  };
+
+  window.resetAllProgress = function() {
+    if (confirm('Vuoi azzerare definitivamente tutti i punteggi, le statistiche e gli errori salvati?')) {
+      appState = defaultState();
+      saveState();
+      renderHome();
+      renderPracticeMeta();
+      alert('Progressi azzerati.');
+    }
+  };
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (!session || document.getElementById('view-quiz').classList.contains('hidden')) return;
+    if (e.key === '1') selectOption(0);
+    else if (e.key === '2') selectOption(1);
+    else if (e.key === '3') selectOption(2);
+    else if (e.key === 'ArrowRight') nextQuestion();
+    else if (e.key === 'ArrowLeft') prevQuestion();
+    else if (e.key.toLowerCase() === 'f') toggleFlag();
+  });
+
+  // Boot
+  initBankDropdown();
+  renderHome();
+  renderPracticeMeta();
+})();
+</script>
+</body>
+</html>
